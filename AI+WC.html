@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Typing Speed Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap"
+rel="stylesheet">
+<link rel="stylesheet" href="AI+WC.css">
+</head>
+<body>
+<div class="video-background">
+<video autoplay muted loop playsinline>
+<source src="background.webm" type="video/webm">
+</video>
+</div>
+<div class="container">
+<div class="header">
+<h1 class="title">AI Typing Speed Tracker</h1>
+<div class="header-controls">
+<div class="theme-switcher">
+<span class="theme-label">Theme:</span>
+<div class="theme-options">
+<button class="theme-btn" data-theme="light">Light</button>
+<button class="theme-btn" data-theme="dark">Dark</button>
+</div>
+</div>
+<div class="profile-section">
+<div class="profile-info">
+<span id="userName">Guest</span>
+<div class="profile-avatar" id="profileAvatar" onclick="showProfileMenu()">
+<span id="userInitials">G</span>
+</div>
+</div>
+<div class="profile-menu" id="profileMenu">
+<button onclick="logout()">Logout</button>
+</div>
+</div>
+</div>
+</div>
+<div class="controls">
+<button id="startBtn" class="btn primary">Start</button>
+<button id="resetBtn" class="btn">Reset</button>
+<select id="duration" class="select">
+<option value="15">15s</option>
+<option value="30" selected>30s</option>
+<option value="60">60s</option>
+<option value="120">120s</option>
+</select>
+<select id="difficulty" class="select">
+<option value="easy">Easy</option>
+<option value="medium">Medium</option>
+<option value="hard">Hard</option>
+<option value="numbers">Numbers</option>
+</select>
+<input id="typerName" class="input" placeholder="Name"/>
+<input id="customText" class="input" placeholder="Custom text"/>
+<button id="useCustom" class="btn ghost">Custom</button>
+<input id="aiSearch" class="input" placeholder="Search topic"/>
+<button id="aiSearchBtn" class="btn ghost">🔍 Search</button>
+</div>
+<div class="metrics">
+<div class="metric">
+<div class="label">WPM (gross)</div>
+<div id="wpm" class="value">0</div>
+</div>
+<div class="metric">
+<div class="label">WPM (net)</div>
+<div id="netWpm" class="value">0</div>
+</div>
+<div class="metric">
+<div class="label">Accuracy</div>
+<div id="acc" class="value">100%</div>
+</div>
+<div class="metric">
+<div class="label">Keystrokes</div>
+<div id="keys" class="value">0</div>
+</div>
+<div class="metric">
+<div class="label">Backspaces</div>
+<div id="backspaceCount" class="value">0</div>
+</div>
+</div>
+<div class="card typing-area-card">
+<div class="progress">
+<div id="progressBar"></div>
+</div>
+<div id="textArea" class="area" wrap="soft" aria-live="polite"></div>
+</div>
+
+<div class="stats-grid">
+<div class="coach keyboard-panel">
+<h3 class="coach-title">Keyboard Heatmap</h3>
+<div id="keyboard" class="kbdgrid"></div>
+</div>
+<div class="coach">
+<h3 class="coach-title">AI Coach</h3>
+<div id="coachMsg" class="hint">Press <b>Start</b> to begin.</div>
+<ul id="tips" class="tips-list"></ul>
+</div>
+<div class="coach">
+<h3 class="coach-title">Session Summary</h3>
+<div id="summary" class="hint">Results will appear after the test.</div>
+<button id="copyBtn" class="btn copy-btn">Copy Summary</button>
+<button id="globalLeaderboard" class="btn">🌍 Global Leaderboard</button>
+<button onclick="showEmailPreview()" class="btn">📧 Email Preview</button>
+</div>
+</div>
+
+
+<div id="overlay" class="test-overlay">
+<div id="overlayContent" class="overlay-content"></div>
+</div>
+
+<!-- Music Control -->
+<div class="music-control" id="musicControl" onclick="toggleMusic()">
+<span id="musicIcon">🎵</span>
+</div>
+<audio id="backgroundMusic" loop>
+<source src="background-music.mp3" type="audio/mpeg">
+</audio>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// Initialize Supabase
+const SUPABASE_URL = 'https://jhyicwcwclalfnmhvcrw.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpoeWljd2N3Y2xhbGZubWh2Y3J3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAzNTAxOTAsImV4cCI6MjA3NTkyNjE5MH0.iBRis_sTOosQ3QwFCrJGCGh2YMoNW-rWbKGztuwl_QY';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Supabase functions
+async function saveScoreToSupabase(scoreData) {
+  try {
+    const { data, error } = await supabase
+      .from('typing_scores')
+      .insert({
+        player_name: scoreData.name,
+        wpm: scoreData.netWpm,
+        accuracy: scoreData.accuracy,
+        duration: scoreData.duration,
+        keystrokes: scoreData.keystrokes || 0,
+        mistakes: scoreData.mistakes || 0
+      });
+    
+    if (error) throw error;
+    Elements.coachMsg.innerHTML += ' 🌍 Saved to global leaderboard!';
+  } catch (error) {
+    console.error('Save failed:', error);
+  }
+}
+
+async function getLeaderboard(limit = 20) {
+  try {
+    const { data, error } = await supabase
+      .from('typing_scores')
+      .select('*')
+      .order('wpm', { ascending: false })
+      .limit(limit);
+    
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Leaderboard failed:', error);
+    return [];
+  }
+}
+</script>
+<script src="supabase.js"></script>
+<script src="netlify-email.js"></script>
+<script src="AI+WC.js"></script>
+</body>
+</html>
