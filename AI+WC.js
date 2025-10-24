@@ -595,49 +595,69 @@ const Game = {
   },
 
   createMobileInput() {
-    // Check if mobile device
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    // Create hidden input for all devices to ensure keyboard support
+    const mobileInput = document.createElement('input');
+    mobileInput.id = 'mobileKeyboard';
+    mobileInput.type = 'text';
+    mobileInput.autocomplete = 'off';
+    mobileInput.autocorrect = 'off';
+    mobileInput.autocapitalize = 'off';
+    mobileInput.spellcheck = false;
+    mobileInput.style.cssText = `
+      position: absolute;
+      left: -9999px;
+      opacity: 0;
+      pointer-events: none;
+      font-size: 16px;
+    `;
     
-    if (isMobile) {
-      // Create hidden input to trigger keyboard
-      const mobileInput = document.createElement('input');
-      mobileInput.id = 'mobileKeyboard';
-      mobileInput.style.cssText = `
-        position: absolute;
-        left: -9999px;
-        opacity: 0;
-        pointer-events: none;
-      `;
-      
-      document.body.appendChild(mobileInput);
-      
-      // Focus to show keyboard
-      setTimeout(() => {
-        mobileInput.focus();
-        mobileInput.click();
-      }, 100);
-      
-      // Capture mobile input
-      mobileInput.addEventListener('input', (e) => {
-        if (State.started) {
-          const inputValue = e.target.value;
-          const lastChar = inputValue.slice(-1);
-          
-          if (lastChar) {
-            // Simulate keypress event
-            const fakeEvent = {
-              key: lastChar,
-              preventDefault: () => {},
-              target: mobileInput
-            };
-            Game.handleKeypress(fakeEvent);
-          }
-          
-          // Clear input to capture next character
-          e.target.value = '';
+    document.body.appendChild(mobileInput);
+    
+    // Focus to show keyboard on all devices
+    setTimeout(() => {
+      mobileInput.focus();
+      mobileInput.click();
+    }, 100);
+    
+    // Capture input from all devices
+    mobileInput.addEventListener('input', (e) => {
+      if (State.started) {
+        const inputValue = e.target.value;
+        const lastChar = inputValue.slice(-1);
+        
+        if (lastChar) {
+          // Simulate keypress event
+          const fakeEvent = {
+            key: lastChar,
+            preventDefault: () => {},
+            target: mobileInput
+          };
+          Game.handleKeypress(fakeEvent);
         }
-      });
-    }
+        
+        // Clear input to capture next character
+        e.target.value = '';
+      }
+    });
+    
+    // Handle backspace
+    mobileInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Backspace' && State.started) {
+        const fakeEvent = {
+          key: 'Backspace',
+          preventDefault: () => {},
+          target: mobileInput
+        };
+        Game.handleKeypress(fakeEvent);
+      }
+    });
+    
+    // Keep focus on input
+    mobileInput.addEventListener('blur', () => {
+      if (State.started) {
+        setTimeout(() => mobileInput.focus(), 10);
+      }
+    });
   },
 
   // The 'Times Up' handler: Handles all post-test logic and visual updates
@@ -1004,9 +1024,48 @@ const MusicControl = {
   }
 };
 
-// Global function for onclick
+/** -------------------- VIDEO CONTROL -------------------- */
+const VideoControl = {
+  video: null,
+  isPlaying: true,
+
+  init() {
+    this.video = document.querySelector('.video-background video');
+    this.videoContainer = document.querySelector('.video-background');
+  },
+
+  toggle() {
+    if (this.isPlaying) {
+      this.videoContainer.classList.add('hidden');
+      this.isPlaying = false;
+    } else {
+      this.videoContainer.classList.remove('hidden');
+      this.isPlaying = true;
+    }
+    this.updateIcon();
+  },
+
+  updateIcon() {
+    const icon = document.getElementById('videoIcon');
+    const control = document.getElementById('videoControl');
+    
+    if (this.isPlaying) {
+      icon.textContent = '📹';
+      control.classList.remove('muted');
+    } else {
+      icon.textContent = '🚫';
+      control.classList.add('muted');
+    }
+  }
+};
+
+// Global functions for onclick
 function toggleMusic() {
   MusicControl.toggle();
+}
+
+function toggleVideo() {
+  VideoControl.toggle();
 }
 
 /** -------------------- INITIALIZATION -------------------- */
@@ -1016,6 +1075,7 @@ function init() {
   EventHandlers.init();
   Auth.init();
   MusicControl.init();
+  VideoControl.init();
   
   Game.reset();
 }
