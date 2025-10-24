@@ -872,7 +872,7 @@ const Auth = {
       this.setUser(session.user);
     } else {
       // Redirect to login if not authenticated
-      window.location.href = 'login.html';
+      window.location.href = 'index.html';
     }
   },
 
@@ -968,4 +968,5 @@ function init() {
 }
 
 // Start the application
+
 init();
