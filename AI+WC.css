@@ -586,6 +586,12 @@ height: 45px;
 bottom: 15px;
 right: 15px;
 }
+.video-control {
+width: 45px;
+height: 45px;
+bottom: 70px;
+right: 15px;
+}
 .area {
 min-height: 150px;
 font-size: 1.1rem;
@@ -940,5 +946,50 @@ transform: scale(0.8);
 body.dark .music-control {
 background: rgba(255, 255, 255, 0.05);
 border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Video Control */
+.video-control {
+position: fixed;
+bottom: 80px;
+right: 20px;
+width: 50px;
+height: 50px;
+background: rgba(255, 255, 255, 0.1);
+backdrop-filter: blur(20px);
+border: 1px solid rgba(255, 255, 255, 0.2);
+border-radius: 50%;
+display: flex;
+align-items: center;
+justify-content: center;
+cursor: pointer;
+transition: all 0.3s ease;
+z-index: 1000;
+box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.video-control:hover {
+transform: scale(1.1);
+background: rgba(255, 255, 255, 0.15);
+box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.video-control span {
+font-size: 1.2rem;
+transition: transform 0.3s ease;
+}
+
+.video-control.muted span {
+opacity: 0.5;
+transform: scale(0.8);
+}
+
+body.dark .video-control {
+background: rgba(255, 255, 255, 0.05);
+border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.video-background.hidden {
+display: none;
 }
 
